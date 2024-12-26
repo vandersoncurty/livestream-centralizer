@@ -1,57 +1,80 @@
-from flask import Flask, request, jsonify
-import sqlite3
 import os
+from flask import Flask, render_template, request, redirect, url_for, session, jsonify
+from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
+app.secret_key = os.urandom(24)
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
+db = SQLAlchemy(app)
 
-# Banco de dados
-DB_PATH = "/etc/rtmp/destinations.db"
-os.makedirs("/etc/rtmp", exist_ok=True)
+# Modelo de usuário
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(80), unique=True, nullable=False)
+    password = db.Column(db.String(120), nullable=False)
 
-# Cria tabela caso não exista
-def init_db():
-    with sqlite3.connect(DB_PATH) as conn:
-        conn.execute("""
-        CREATE TABLE IF NOT EXISTS destinations (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            stream_type TEXT NOT NULL,
-            server TEXT NOT NULL,
-            key TEXT NOT NULL
-        )
-        """)
-init_db()
+# Modelo de configurações
+class Config(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    stream_type = db.Column(db.String(80), nullable=False)
+    destinations = db.Column(db.Text, nullable=False)
 
-# Rota para atualizar destinos
-@app.route('/update', methods=['POST'])
-def update_destinations():
-    data = request.json
-    stream_type = data.get("type")  # horizontal ou vertical
-    destinations = data.get("destinations")  # Lista de dicts com server e key
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        user = User.query.filter_by(username=username).first()
 
-    if stream_type not in ["horizontal", "vertical"]:
-        return jsonify({"error": "Invalid stream type"}), 400
+        if user and user.password == password:
+            session['user_id'] = user.id
+            return redirect(url_for('index'))
+        else:
+            return 'Invalid username or password', 403
 
-    # Atualiza banco de dados
-    with sqlite3.connect(DB_PATH) as conn:
-        conn.execute(f"DELETE FROM destinations WHERE stream_type = ?", (stream_type,))
-        conn.executemany(
-            f"INSERT INTO destinations (stream_type, server, key) VALUES (?, ?, ?)",
-            [(stream_type, d["server"], d["key"]) for d in destinations]
-        )
+    return render_template('login.html')
 
-    # Atualiza arquivos
-    file_path = f"/etc/rtmp/{stream_type}_destinations"
-    with open(file_path, "w") as f:
-        f.write("\n".join([f'rtmp://{d["server"]}/{d["key"]}' for d in destinations]))
+@app.route('/')
+def index():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
 
-    return jsonify({"message": "Destinations updated"}), 200
+    horizontal_config = Config.query.filter_by(stream_type='horizontal').first()
+    vertical_config = Config.query.filter_by(stream_type='vertical').first()
+    
+    return render_template('index.html', horizontal=horizontal_config, vertical=vertical_config)
 
-# Rota para listar destinos
-@app.route('/destinations', methods=['GET'])
-def list_destinations():
-    with sqlite3.connect(DB_PATH) as conn:
-        rows = conn.execute("SELECT stream_type, server, key FROM destinations").fetchall()
-    return jsonify([{"type": r[0], "server": r[1], "key": r[2]} for r in rows])
+@app.route('/settings', methods=['GET', 'POST'])
+def settings():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    if request.method == 'POST':
+        horizontal_destinations = request.form['horizontal_destinations']
+        vertical_destinations = request.form['vertical_destinations']
+        
+        horizontal_config = Config.query.filter_by(stream_type='horizontal').first()
+        if horizontal_config:
+            horizontal_config.destinations = horizontal_destinations
+        else:
+            new_config = Config(stream_type='horizontal', destinations=horizontal_destinations)
+            db.session.add(new_config)
+
+        vertical_config = Config.query.filter_by(stream_type='vertical').first()
+        if vertical_config:
+            vertical_config.destinations = vertical_destinations
+        else:
+            new_config = Config(stream_type='vertical', destinations=vertical_destinations)
+            db.session.add(new_config)
+
+        db.session.commit()
+        return redirect(url_for('index'))
+
+    horizontal_config = Config.query.filter_by(stream_type='horizontal').first()
+    vertical_config = Config.query.filter_by(stream_type='vertical').first()
+    
+    return render_template('settings.html', horizontal=horizontal_config, vertical=vertical_config)
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+    db.create_all()  # Cria as tabelas se ainda não existirem
+    app.run(host='0.0.0.0', port=5000)
