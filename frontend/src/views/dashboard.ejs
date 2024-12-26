@@ -1,0 +1,28 @@
+<h1>Dashboard</h1>
+<h2>Atualizar Destinos</h2>
+
+<h3>Horizontal</h3>
+<form action="/update" method="post">
+  <input type="hidden" name="type" value="horizontal" />
+  <input type="text" name="server" placeholder="Servidor" required />
+  <input type="text" name="key" placeholder="Chave" required />
+  <button type="submit">Atualizar Horizontal</button>
+</form>
+
+<h3>Vertical</h3>
+<form action="/update" method="post">
+  <input type="hidden" name="type" value="vertical" />
+  <input type="text" name="server" placeholder="Servidor" required />
+  <input type="text" name="key" placeholder="Chave" required />
+  <button type="submit">Atualizar Vertical</button>
+</form>
+
+<h3>Destinos Configurados</h3>
+<ul>
+  <% destinations.forEach(function(destination) { %>
+    <li>
+      <strong><%= destination.type %></strong>: 
+      <%= destination.server %> - <%= destination.key %>
+    </li>
+  <% }); %>
+</ul>
