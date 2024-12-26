@@ -93,6 +93,17 @@ def settings():
     
     return render_template('settings.html', horizontal=horizontal_config, vertical=vertical_config)
 
+@app.route('/streams/horizontal.m3u8')
+def horizontal_stream():
+    # Serve o arquivo m3u8 ou redireciona para o servidor de streaming
+    return redirect("http://127.0.0.1:8080/horizontal.m3u8")
+
+@app.route('/streams/vertical.m3u8')
+def vertical_stream():
+    # Serve o arquivo m3u8 ou redireciona para o servidor de streaming
+    return redirect("http://127.0.0.1:8080/vertical.m3u8")
+
+
 
 # Iniciar o contexto da aplicação para a criação do banco de dados
 if __name__ == "__main__":

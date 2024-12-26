@@ -1,17 +1,10 @@
-# Usando uma imagem Python base
-FROM python:3.9-slim
+FROM ubuntu:20.04
 
-# Definir diretório de trabalho
-WORKDIR /app
+RUN apt-get update && apt-get install -y \
+    ffmpeg \
+    nginx \
+    libnginx-mod-rtmp
 
-# Copiar arquivos do projeto para o diretório de trabalho
-COPY . .
+COPY nginx.conf /etc/nginx/nginx.conf
 
-# Instalar as dependências
-RUN pip install -r requirements.txt
-
-# Expor a porta do Flask
-EXPOSE 5000
-
-# Rodar a aplicação Flask
-CMD ["python", "app.py"]
+CMD ["nginx", "-g", "daemon off;"]
