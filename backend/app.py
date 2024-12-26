@@ -1,5 +1,5 @@
 import os
-from flask import Flask, render_template, request, redirect, url_for, session, jsonify
+from flask import Flask, render_template, request, redirect, url_for, session
 from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
@@ -50,21 +50,39 @@ def settings():
         return redirect(url_for('login'))
 
     if request.method == 'POST':
-        horizontal_destinations = request.form['horizontal_destinations']
-        vertical_destinations = request.form['vertical_destinations']
+        # Processa os destinos horizontais
+        horizontal_servers = request.form.getlist('horizontal_server[]')
+        horizontal_keys = request.form.getlist('horizontal_key[]')
         
+        horizontal_destinations = []
+        for server, key in zip(horizontal_servers, horizontal_keys):
+            horizontal_destinations.append(f"{server} - {key}")
+        
+        horizontal_destinations_str = "\n".join(horizontal_destinations)
+
+        # Processa os destinos verticais
+        vertical_servers = request.form.getlist('vertical_server[]')
+        vertical_keys = request.form.getlist('vertical_key[]')
+        
+        vertical_destinations = []
+        for server, key in zip(vertical_servers, vertical_keys):
+            vertical_destinations.append(f"{server} - {key}")
+        
+        vertical_destinations_str = "\n".join(vertical_destinations)
+
+        # Atualiza ou cria os registros de destinos no banco de dados
         horizontal_config = Config.query.filter_by(stream_type='horizontal').first()
         if horizontal_config:
-            horizontal_config.destinations = horizontal_destinations
+            horizontal_config.destinations = horizontal_destinations_str
         else:
-            new_config = Config(stream_type='horizontal', destinations=horizontal_destinations)
+            new_config = Config(stream_type='horizontal', destinations=horizontal_destinations_str)
             db.session.add(new_config)
 
         vertical_config = Config.query.filter_by(stream_type='vertical').first()
         if vertical_config:
-            vertical_config.destinations = vertical_destinations
+            vertical_config.destinations = vertical_destinations_str
         else:
-            new_config = Config(stream_type='vertical', destinations=vertical_destinations)
+            new_config = Config(stream_type='vertical', destinations=vertical_destinations_str)
             db.session.add(new_config)
 
         db.session.commit()
@@ -75,6 +93,9 @@ def settings():
     
     return render_template('settings.html', horizontal=horizontal_config, vertical=vertical_config)
 
+
+# Iniciar o contexto da aplicação para a criação do banco de dados
 if __name__ == "__main__":
-    db.create_all()  # Cria as tabelas se ainda não existirem
+    with app.app_context():
+        db.create_all()  # Cria as tabelas se ainda não existirem
     app.run(host='0.0.0.0', port=5000)

@@ -1,16 +1,63 @@
-{% extends 'layout.html' %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Livestream Centralizer - Settings</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <div class="container mt-5">
+        <h1>Livestream Centralizer - Configurações</h1>
+        <form method="POST">
+            <div id="horizontalDestinations">
+                <h3>Horizontal Destinations</h3>
+                <div class="destination-entry">
+                    <div class="row mb-3">
+                        <div class="col">
+                            <input type="text" name="horizontal_server[]" class="form-control" placeholder="Servidor (Ex: rtmp://twitch.tv/stream)" required>
+                        </div>
+                        <div class="col">
+                            <input type="text" name="horizontal_key[]" class="form-control" placeholder="Chave de Transmissão" required>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-{% block content %}
-    <h2 class="mt-5">Settings</h2>
-    <form method="POST" class="mt-3">
-        <div class="form-group">
-            <label for="horizontal_destinations">Horizontal Destinations</label>
-            <textarea class="form-control" name="horizontal_destinations" rows="3">{{ horizontal.destinations if horizontal else '' }}</textarea>
-        </div>
-        <div class="form-group">
-            <label for="vertical_destinations">Vertical Destinations</label>
-            <textarea class="form-control" name="vertical_destinations" rows="3">{{ vertical.destinations if vertical else '' }}</textarea>
-        </div>
-        <button type="submit" class="btn btn-primary">Save</button>
-    </form>
-{% endblock %}
+            <div id="verticalDestinations">
+                <h3>Vertical Destinations</h3>
+                <div class="destination-entry">
+                    <div class="row mb-3">
+                        <div class="col">
+                            <input type="text" name="vertical_server[]" class="form-control" placeholder="Servidor (Ex: rtmp://tiktok.tv/stream)" required>
+                        </div>
+                        <div class="col">
+                            <input type="text" name="vertical_key[]" class="form-control" placeholder="Chave de Transmissão" required>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <button type="button" class="btn btn-secondary" id="addHorizontal">+ Adicionar Destino Horizontal</button>
+            <button type="button" class="btn btn-secondary" id="addVertical">+ Adicionar Destino Vertical</button>
+
+            <div class="mt-4">
+                <button type="submit" class="btn btn-primary">Salvar Configurações</button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        $(document).ready(function() {
+            $('#addHorizontal').click(function() {
+                $('#horizontalDestinations').append('<div class="row mb-3 destination-entry"><div class="col"><input type="text" name="horizontal_server[]" class="form-control" placeholder="Servidor (Ex: rtmp://twitch.tv/stream)" required></div><div class="col"><input type="text" name="horizontal_key[]" class="form-control" placeholder="Chave de Transmissão" required></div></div>');
+            });
+
+            $('#addVertical').click(function() {
+                $('#verticalDestinations').append('<div class="row mb-3 destination-entry"><div class="col"><input type="text" name="vertical_server[]" class="form-control" placeholder="Servidor (Ex: rtmp://tiktok.tv/stream)" required></div><div class="col"><input type="text" name="vertical_key[]" class="form-control" placeholder="Chave de Transmissão" required></div></div>');
+            });
+        });
+    </script>
+</body>
+</html>
